@@ -1,7 +1,8 @@
 import click
 import json
 
-from junit_xml import TestCase, TestSuite, to_xml_report_string
+from junit_xml import TestCase, to_xml_report_string
+from dbt_junitxml.dbt_test_suite import DBTTestSuite
 
 
 class InvalidRunResult(Exception):
@@ -34,13 +35,14 @@ def parse(run_result, output):
             raise InvalidRunResult("run_result.json other than v4 are not supported.")
 
         if not rpc_method == "test":
-            raise InvalidRunResult(f"run_result.json must be from the output of `dbt test`. Got dbt {rpc_method}.")
+            raise InvalidRunResult(
+                f"run_result.json must be from the output of `dbt test`. Got dbt {rpc_method}.")
 
     except KeyError as e:
         raise InvalidRunResult(e)
 
     tests = run_result["results"]
-
+    total_elapsed_time = run_result["elapsed_time"]
     test_cases = []
     for test in tests:
         test_case = TestCase(
@@ -51,17 +53,17 @@ def parse(run_result, output):
         )
 
         if test["status"] == "fail":
-            test_case.add_failure_info(message=test["message"])
+            test_case.add_failure_info(message=test["message"], output=test["message"])
 
         if test["status"] == "error":
-            test_case.add_error_info(message=test["message"])
+            test_case.add_error_info(message=test["message"], output=test["message"])
 
         if test["status"] == "skipped":
-            test_case.add_skipped_info(message=test["message"])
+            test_case.add_skipped_info(message=test["message"], output=test["message"])
 
         test_cases.append(test_case)
 
-    test_suite = TestSuite("Tests", test_cases=test_cases)
+    test_suite = DBTTestSuite("Tests", test_cases=test_cases, time=total_elapsed_time)
 
     xml_report = to_xml_report_string([test_suite])
 
