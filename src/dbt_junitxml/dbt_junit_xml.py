@@ -1,5 +1,46 @@
-from junit_xml import TestSuite, decode
+from junit_xml import TestSuite, TestCase, decode
 import xml.etree.ElementTree as ET
+
+
+class DBTTestCase(TestCase):
+    """A JUnit test case with a result and possibly some stdout or stderr"""
+
+    def __init__(
+            self,
+            name,
+            classname=None,
+            elapsed_sec=None,
+            stdout=None,
+            stderr=None,
+            assertions=None,
+            timestamp=None,
+            status=None,
+            category=None,
+            file=None,
+            line=None,
+            log=None,
+            url=None,
+            allow_multiple_subelements=False,
+    ):
+        self.name = name
+        self.assertions = assertions
+        self.elapsed_sec = elapsed_sec
+        self.timestamp = timestamp
+        self.classname = classname
+        self.status = status
+        self.category = category
+        self.file = file
+        self.line = line
+        self.log = log
+        self.url = url
+        self.stdout = stdout
+        self.stderr = stderr
+
+        self.is_enabled = True
+        self.errors = []
+        self.failures = []
+        self.skipped = []
+        self.allow_multiple_subalements = allow_multiple_subelements
 
 
 class DBTTestSuite(TestSuite):
