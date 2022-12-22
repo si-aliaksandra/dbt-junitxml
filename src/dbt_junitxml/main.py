@@ -16,13 +16,6 @@ def convert_timestamp_to_isoformat(timestamp: str) -> str:
         '%Y-%m-%dT%H:%M:%S')
 
 
-def convert_seconds_to_duration(seconds):
-    hour = int(seconds // 3600)
-    minute = int((seconds - hour * 3600) // 60)
-    second = int(seconds - hour * 3600 - minute * 60)
-    return f'{hour}h {minute}m {second}s'
-
-
 @click.group()
 def cli():
     pass
@@ -66,24 +59,35 @@ def parse(run_result, manifest, output):
     total_elapsed_time = run_result["elapsed_time"]
     test_suite_timestamp = convert_timestamp_to_isoformat(run_result["metadata"]["generated_at"])
 
-    unified_nodes = {}
-    for key, value in manifest.items():
-        test_name = key.split('.')[2].replace('a_type_critical_', '')
-        unified_nodes[test_name] = value
-        sql_path = os.path.join(value['root_path'], 'target', 'compiled', 'anywhere_analytics',
-                                value['original_file_path'], value['path'])
-        try:
-            with open(sql_path, 'r') as sql:
-                unified_nodes[test_name]['sql'] = str.join('', sql.readlines())
-        except FileNotFoundError as e:
-            unified_nodes[test_name]['sql'] = value['raw_sql']
+    tests_manifest = {}
+    for key, config in manifest.items():
+        if config['resource_type'] == 'test':
+            test_name = key.split('.')[2]
+            tests_manifest[test_name] = config
+            sql_path = os.path.join(config['root_path'], 'target', 'compiled', config['package_name'],
+                                    config['original_file_path'], config['path'])
+            sql_log = \
+                f"""select * from {tests_manifest[test_name]['schema']}.{tests_manifest[test_name]['alias']
+                if tests_manifest[test_name]['alias'] else tests_manifest[test_name]['name']}"""
+            sql_log_format = "\n" + '-'*96 + "\n" + sql_log + "\n" + '-'*96
+            try:
+                with open(sql_path, 'r') as sql:
+                    sql_text = sql.readlines()
+                    sql_text.insert(0, sql_log_format)
+                    tests_manifest[test_name]['sql'] = str.join('', sql_text)
+            except FileNotFoundError as e:
+                sql_text = config['compiled_sql'] if 'compiled_sql' in config.keys() else config[
+                    'raw_sql']
+                sql_text = [sql_log_format, sql_text]
+                tests_manifest[test_name]['sql'] = str.join('', sql_text)
+
 
     test_cases = []
     for test in tests:
-        test_name = test["unique_id"].split('.')[2].replace('a_type_critical_', '')
+        test_name = test["unique_id"].split('.')[2]
         test_timestamp = test['timing'][0]["started_at"] if ["status"] == 'pass' \
             else test_suite_timestamp
-        test_sql = unified_nodes[test_name]["sql"] if test_name in unified_nodes.keys() else 'N/A'
+        test_sql = tests_manifest[test_name]["sql"] if test_name in tests_manifest.keys() else 'N/A'
         test_case = DBTTestCase(
             classname=test["unique_id"],
             name=test["unique_id"].split(".")[2],
