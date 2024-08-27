@@ -48,8 +48,9 @@ def parse(run_result, manifest, output):
         if schema_version not in [
             "https://schemas.getdbt.com/dbt/run-results/v4.json",
             "https://schemas.getdbt.com/dbt/run-results/v5.json",
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
         ]:
-            raise InvalidRunResult("run_result.json other than v4 and v5 are not supported.")
+            raise InvalidRunResult("run_result.json other than (v4-v6) are not supported.")
 
         if not executed_command == "test":
             raise InvalidRunResult(
