@@ -42,15 +42,19 @@ def parse(run_result, manifest, output):
         manifest = json.load(m)['nodes']
 
     try:
-        rpc_method = run_result["args"]["rpc_method"]
+        executed_command = run_result["args"]["which"] if 'which' in run_result["args"].keys() else run_result["args"]["rpc_method"]
         schema_version = run_result["metadata"]["dbt_schema_version"]
 
-        if not schema_version == "https://schemas.getdbt.com/dbt/run-results/v4.json":
-            raise InvalidRunResult("run_result.json other than v4 are not supported.")
+        if schema_version not in [
+            "https://schemas.getdbt.com/dbt/run-results/v4.json",
+            "https://schemas.getdbt.com/dbt/run-results/v5.json",
+            "https://schemas.getdbt.com/dbt/run-results/v6.json",
+        ]:
+            raise InvalidRunResult("run_result.json other than (v4-v6) are not supported.")
 
-        if not rpc_method == "test":
+        if not executed_command == "test":
             raise InvalidRunResult(
-                f"run_result.json must be from the output of `dbt test`. Got dbt {rpc_method}.")
+                f"run_result.json must be from the output of `dbt test`. Got dbt {executed_command}.")
 
     except KeyError as e:
         raise InvalidRunResult(e)
@@ -68,8 +72,14 @@ def parse(run_result, manifest, output):
                 f"""select * from {tests_manifest[test_name]['schema']}.{tests_manifest[test_name]['alias']
                 if tests_manifest[test_name]['alias'] else tests_manifest[test_name]['name']}"""
             sql_log_format = "\n" + '-'*96 + "\n" + sql_log + "\n" + '-'*96
-            sql_text = config['compiled_sql'] if 'compiled_sql' in config.keys() else config[
-                'raw_sql']
+            if 'compiled_sql' in config.keys():
+                sql_text = config['compiled_sql']
+            elif 'compiled_code' in config.keys():
+                sql_text = config['compiled_code']
+            elif 'raw_code' in config.keys():
+                sql_text = config['raw_code']
+            else:
+                sql_text = config['raw_sql']
             sql_text = [sql_log_format, sql_text]
             tests_manifest[test_name]['sql'] = str.join('', sql_text)
 
