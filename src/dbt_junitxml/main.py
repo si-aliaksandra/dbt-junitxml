@@ -5,6 +5,7 @@ from junit_xml import to_xml_report_string
 from dbt_junitxml.dbt_junit_xml import DBTTestSuite, DBTTestCase
 from datetime import datetime
 import os
+from pathlib import Path
 
 
 class InvalidRunResult(Exception):
@@ -19,6 +20,13 @@ def convert_timestamp_to_isoformat(timestamp: str) -> str:
 @click.group()
 def cli():
     pass
+
+
+def get_custom_properties(path: str) -> dict:
+    path_members = Path(path).parts
+    return {
+        "Source": path_members[1] if len(path_members) > 1 else 'N/A',
+        "Area": path_members[2] if len(path_members) > 2 else 'N/A'}
 
 
 @cli.command()
@@ -42,7 +50,8 @@ def parse(run_result, manifest, output):
         manifest = json.load(m)['nodes']
 
     try:
-        executed_command = run_result["args"]["which"] if 'which' in run_result["args"].keys() else run_result["args"]["rpc_method"]
+        executed_command = run_result["args"]["which"] if 'which' in run_result["args"].keys() else run_result["args"][
+            "rpc_method"]
         schema_version = run_result["metadata"]["dbt_schema_version"]
 
         if schema_version not in [
@@ -71,7 +80,7 @@ def parse(run_result, manifest, output):
             sql_log = \
                 f"""select * from {tests_manifest[test_name]['schema']}.{tests_manifest[test_name]['alias']
                 if tests_manifest[test_name]['alias'] else tests_manifest[test_name]['name']}"""
-            sql_log_format = "\n" + '-'*96 + "\n" + sql_log + "\n" + '-'*96
+            sql_log_format = "\n" + '-' * 96 + "\n" + sql_log + "\n" + '-' * 96
             if 'compiled_sql' in config.keys():
                 sql_text = config['compiled_sql']
             elif 'compiled_code' in config.keys():
@@ -82,7 +91,7 @@ def parse(run_result, manifest, output):
                 sql_text = config['raw_sql']
             sql_text = [sql_log_format, sql_text]
             tests_manifest[test_name]['sql'] = str.join('', sql_text)
-
+            tests_manifest[test_name]['properties'] = get_custom_properties(config['original_file_path'])
 
     test_cases = []
     for test in tests:
@@ -96,7 +105,8 @@ def parse(run_result, manifest, output):
             elapsed_sec=test["execution_time"],
             status=test["status"],
             timestamp=test_timestamp,
-            stdout=test_sql
+            stdout=test_sql,
+            properties=tests_manifest[test_name]["properties"] if test_name in tests_manifest.keys() else None
         )
 
         if test["status"] == "fail":
