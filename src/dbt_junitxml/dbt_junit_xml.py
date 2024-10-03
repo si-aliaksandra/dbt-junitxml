@@ -180,6 +180,20 @@ class DBTTestSuite(TestSuite):
 
             test_case_element = ET.SubElement(xml_element, "testcase", test_case_attributes)
 
+            # test properties
+            if case.properties:
+                case_props_element = ET.Element("properties")
+
+                for k, v in case.properties.items():
+                    if isinstance(v, list):
+                        for value in v:
+                            attrs = {"name": decode(k, encoding), "value": decode(value, encoding)}
+                            ET.SubElement(case_props_element, "property", attrs)
+                    else:
+                        attrs = {"name": decode(k, encoding), "value": decode(v, encoding)}
+                        ET.SubElement(case_props_element, "property", attrs)
+
+                test_case_element.append(case_props_element)
             # failures
             for failure in case.failures:
                 if failure["output"] or failure["message"]:
@@ -228,13 +242,5 @@ class DBTTestSuite(TestSuite):
                 stderr_element.text = decode(case.stderr, encoding)
                 test_case_element.append(stderr_element)
 
-            # test properties
-            if case.properties:
-                case_props_element = ET.Element("properties")
 
-                for k, v in case.properties.items():
-                    attrs = {"name": decode(k, encoding), "value": decode(v, encoding)}
-                    ET.SubElement(case_props_element, "property", attrs)
-
-                test_case_element.append(case_props_element)
         return xml_element
