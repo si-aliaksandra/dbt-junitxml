@@ -22,9 +22,9 @@ def convert_timestamp_to_isoformat(timestamp: str) -> str:
 
 def get_custom_properties(path: str, custom_properties: dict) -> dict:
     """
-    We receive path "models/anywhere/hiring/ and
-    custom_attributes = [{"Area":"path_levels[1]", "Source":"path_levels[2]"}]
-    We return {"attribute": ["Area:anywhere","Source:hiring"]}
+    :param path: string, expected path to model, ex. "models/source/area/some_model.yml
+    :param custom_properties: dictionary, ex. {"Source":"path_levels[1]","Area":"path_levels[2]"}
+    :return: dictionary, ex. {"attribute": ["Source:source","Area:area"]}
     """
     path_levels = Path(path).parts
     properties = {"attribute": []}
@@ -46,12 +46,6 @@ def get_custom_properties(path: str, custom_properties: dict) -> dict:
             continue
 
     return properties
-
-
-def validate_path(path: str) -> str:
-    if not Path(path).exists():
-        raise ValueError(f"Invalid path: {path}")
-    return path
 
 
 def validate_custom_properties(ctx, param, value):
