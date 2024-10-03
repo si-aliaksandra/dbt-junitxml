@@ -24,3 +24,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 dbt-junitxml = 'dbt_junitxml.main:cli'
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "--verbose"
+testpaths = [
+    "tests",
+]
