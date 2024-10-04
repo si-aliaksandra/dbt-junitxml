@@ -31,4 +31,5 @@ jobs:
 
     - name: Run tests
       run: |
-        poetry run pytest
+        cd ..
+        coverage run --source=. -m pytest tests --vcr-record=none --durations=0
