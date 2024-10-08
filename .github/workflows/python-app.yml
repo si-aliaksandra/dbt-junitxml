@@ -31,5 +31,6 @@ jobs:
 
     - name: Run tests
       run: |
-        cd ..
+        pwd
+        cd src
         coverage run --source=. -m pytest tests --vcr-record=none --durations=0
