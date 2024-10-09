@@ -33,4 +33,4 @@ jobs:
     - name: Run tests
       run: |
         cd src
-        coverage run --source=src -m pytest tests
+        coverage run --source=. -m pytest tests
