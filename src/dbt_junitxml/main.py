@@ -8,9 +8,10 @@ from datetime import datetime
 from pathlib import Path
 
 import click
-from dbt_junit_xml import DBTTestCase
-from dbt_junit_xml import DBTTestSuite
 from junit_xml import to_xml_report_string
+
+from .dbt_junit_xml import DBTTestCase
+from .dbt_junit_xml import DBTTestSuite
 
 
 class InvalidRunResult(Exception):
