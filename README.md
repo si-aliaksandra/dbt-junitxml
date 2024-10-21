@@ -31,27 +31,12 @@ to parse your run results and output a jUnit XML formatted report named `report.
 dbt-junitxml parse --manifest target/manifest.json --run_result target/run_results.json --output report.xml
 ```
 
-By default, --manifest is `target/manifest.json`, --run_result is `target/run_results.json` and --output is `report.xml`, so in case your input aren't differ from these ones, you could run just like that:
+By default, --manifest is `target/manifest.json`, --run_result is `target/run_results.json` and --output is `report.xml`, so in case your input isn't different from these values, you could run:
 
 ```shell
 dbt-junitxml parse
 ```
 
-Since 0.2.2 version you will be able to put attributes within an junit xml report,
-you'll need additionally provide --custom_properties:
-
-```shell
-dbt-junitxml parse --manifest target/manifest.json --run_result target/run_results.json --output report.xml --custom_properties Area=path_levels[2] --custom_properties Source=path_levels[1]
-```
-
-After that each test case will be enriched with properties:
-```xml
-<properties>
-    <property name="attribute" value="Area:source_data"/>
-    <property name="attribute" value="Source:sources_sharepoint.yml"/>
-    <property name="attribute" value="Description:nightly_run"/>
-</properties>
-```
 
 ## Features description
 
@@ -93,9 +78,29 @@ In order to upload your test run to reportportal you can use the following scrip
 dbt-junitxml parse target/run_results.json target/manifest.json dbt_test_report.xml
 zip dbt_test_report.zip dbt_test_report.xml
 REPORT_PORTAL_TOKEN=`Your token for Report Portal`
-RESPONSE=`curl -X POST "https://reportportal.io/api/v1/epm-plxd/launch/import" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H  "Authorization: bearer ${REPORT_PORTAL_TOKEN}" -F "file=@dbt_test_report.zip;type=application/x-zip-compressed"`
+RESPONSE=`curl -X POST "https://reportportal.epam.com/api/v1/plugin/{project_name}/JUnit/import" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H  "Authorization: bearer ${REPORT_PORTAL_TOKEN}" -F "file=@dbt_test_report.zip;type=application/x-zip-compressed"`
 LAUNCH_ID=`echo "${RESPONSE}" | sed 's/.*Launch with id = \(.*\) is successfully imported.*/\1/'`
 ```
+
+### Test Case Attribute displayed in Report Portal
+
+Since 0.2.2 version you will be able to put attributes within an junit xml report. For this you'll need additionally provide --custom_properties:
+
+```shell
+dbt-junitxml parse --manifest target/manifest.json --run_result target/run_results.json --output report.xml --custom_properties Area=path_levels[2] --custom_properties Source=path_levels[1]
+```
+
+where `path_levels` is a reserved variable, pointing to the directory that  models stored, and index is a level of each subdirectory starting from the root of dbt project.
+
+
+Each test case will be enriched with properties, example:
+```xml
+<properties>
+    <property name="attribute" value="Area:source_data"/>
+    <property name="attribute" value="Source:sources_sharepoint.yml"/>
+</properties>
+```
+
 
 ## Limitations
 
